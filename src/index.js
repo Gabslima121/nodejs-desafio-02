@@ -10,19 +10,64 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  const user = users.find((user) => user.username === username)
+
+  if (!user) {
+    return response.status(404).json({ error: 'User not found!' })
+  }
+
+  request.user = user;
+
+  return next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request
+
+  if (user.pro === false && user.todo <= 10 || user.pro === true) {
+    return next()
+  }
+
+  return response.status(403).json({ error: 'User has more then 10 todos created' })
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.body
+  const { id } = request.params; //todo
+
+  const userExists = users.find((user) => user.username === username)
+  const todoExists = users.todo.find((user) => user.todo.id === id)
+
+  if(!todoExists && !userExists) {
+    return response.status(404).json({ error: 'User not found'})
+  }
+
+  const isTodoIdValid = validate(id, 4)
+
+  if(!isTodoIdValid){
+    return response.status(400).json({ error: 'ID not found for this TODO'})
+  }
+  
+  request.user = userExists
+  request.todo = todoExists
+
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  const userExists = users.find((user) => user.id === id)
+
+  if(!userExists){
+    return response.status(404).json({ error: 'User not found'})
+  }
+
+  request.user = userExists
+
+  return next()
 }
 
 app.post('/users', (request, response) => {
@@ -106,7 +151,7 @@ app.patch('/todos/:id/done', checksTodoExists, (request, response) => {
   return response.json(todo);
 });
 
-app.delete('/todos/:id', checksExistsUserAccount, checksTodoExists, (request, response) => {
+app.delete('/todos/:id', checksTodoExists, (request, response) => {
   const { user, todo } = request;
 
   const todoIndex = user.todos.indexOf(todo);
